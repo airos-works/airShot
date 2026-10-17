@@ -155,7 +155,7 @@ private:
 };
 
 
-EditorWindow::EditorWindow(BBitmap* bitmap, const Settings& settings)
+EditorWindow::EditorWindow(BBitmap* bitmap, const Settings& settings, float pixelScale)
 	:
 	BWindow(BRect(100, 100, 900, 700), "airShot", B_DOCUMENT_WINDOW,
 		B_ASYNCHRONOUS_CONTROLS | B_AUTO_UPDATE_SIZE_LIMITS),
@@ -175,12 +175,14 @@ EditorWindow::EditorWindow(BBitmap* bitmap, const Settings& settings)
 	style.filled = false;
 	style.pixelate = false;
 
-	fCanvas = new CanvasView(bitmap, style);
+	fCanvas = new CanvasView(bitmap, style, pixelScale);
 	fMenuBar = new BMenuBar("menu");
 	_BuildMenu();
 	_BuildToolBar();
 	fStatus = new BStringView("status", "");
+	// The whole row, truncated only when the window is narrower than the text.
 	fStatus->SetExplicitMinSize(BSize(200, B_SIZE_UNSET));
+	fStatus->SetExplicitMaxSize(BSize(B_SIZE_UNLIMITED, B_SIZE_UNSET));
 	fStatus->SetTruncation(B_TRUNCATE_END);
 	BScrollView* scroll = new BScrollView("scroll", fCanvas, 0, true, true, B_NO_BORDER);
 
@@ -192,12 +194,15 @@ EditorWindow::EditorWindow(BBitmap* bitmap, const Settings& settings)
 		.AddGroup(B_HORIZONTAL, 0)
 			.SetInsets(B_USE_SMALL_INSETS, 2, B_USE_SMALL_INSETS, 2)
 			.Add(fStatus)
-			.AddGlue()
 		.End();
 
-	MoveTo(_InitialFrame(settings, bitmap->Bounds()).LeftTop());
-	ResizeTo(_InitialFrame(settings, bitmap->Bounds()).Width(),
-		_InitialFrame(settings, bitmap->Bounds()).Height());
+	// The image as big as it is on the screen.
+	BRect imageBounds = bitmap->Bounds();
+	imageBounds.right = (imageBounds.Width() + 1) * fCanvas->ActualZoom() - 1;
+	imageBounds.bottom = (imageBounds.Height() + 1) * fCanvas->ActualZoom() - 1;
+	BRect frame = _InitialFrame(settings, imageBounds);
+	MoveTo(frame.LeftTop());
+	ResizeTo(frame.Width(), frame.Height());
 	_SetTool(kToolArrow);
 	_UpdateTitle();
 	_UpdateControls();
@@ -376,8 +381,10 @@ void EditorWindow::_UpdateStatus()
 {
 	BRect bounds = fCanvas->ImageBounds();
 	BString text;
+	// The zoom is relative to the actual size: 100% shows screen pixels as they were.
 	text.SetToFormat("%d \xc3\x97 %d px   \xc2\xb7   %d%%", (int)bounds.Width() + 1,
-		(int)bounds.Height() + 1, (int)roundf(fCanvas->Zoom() * 100));
+		(int)bounds.Height() + 1,
+		(int)roundf(fCanvas->Zoom() * fCanvas->PixelScale() * 100));
 	if (fCursorX >= 0)
 		text << "   \xc2\xb7   " << fCursorX << ", " << fCursorY;
 	if (fCanvas->CountAnnotations() > 0)
@@ -506,9 +513,9 @@ void EditorWindow::MessageReceived(BMessage* message)
 	}
 	switch (message->what) {
 		case kMsgInitialZoom:
-			// The canvas has its final size now: shrink big images to fit.
-			if (fCanvas->FitZoom() < 1)
-				fCanvas->ZoomToFit();
+			// The canvas has its final size now: actual size, or smaller to
+			// fit a big image.
+			fCanvas->ZoomToFit();
 			_UpdateStatus();
 			break;
 
@@ -570,7 +577,7 @@ void EditorWindow::MessageReceived(BMessage* message)
 			fCanvas->SetZoom(fCanvas->Zoom() / 1.25f);
 			break;
 		case kMsgZoomActual:
-			fCanvas->SetZoom(1);
+			fCanvas->SetZoom(fCanvas->ActualZoom());
 			break;
 		case kMsgZoomFit:
 			fCanvas->ZoomToFit();

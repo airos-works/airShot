@@ -21,7 +21,9 @@ class ColorSwatchView;
 
 class EditorWindow : public BWindow {
 public:
-								EditorWindow(BBitmap* bitmap, const Settings& settings);
+	// pixelScale: image pixels per screen coordinate unit (see CanvasView).
+								EditorWindow(BBitmap* bitmap, const Settings& settings,
+									float pixelScale = 1);
 	virtual						~EditorWindow();
 
 	virtual	void				MessageReceived(BMessage* message);

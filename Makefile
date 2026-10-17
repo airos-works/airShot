@@ -21,7 +21,7 @@ APP_OBJ = $(APP_SRC:%.cpp=$(BUILD)/%.o)
 APP_CPPFLAGS = -I/boot/system/develop/headers/private/interface \
 	-I/boot/system/develop/headers/private/shared \
 	-I/boot/system/develop/headers/private/app
-APP_LIBS = -lbe -ltracker -ltranslation -lshared
+APP_LIBS = -lbe -lgame -ltracker -ltranslation -lshared
 
 # The input_server filter add-on; BInputServerFilter is resolved from
 # input_server itself when the add-on is loaded.
@@ -78,7 +78,7 @@ $(BUILD)/icon_dump: tests/IconDump.cpp $(BUILD)/src/editor/ToolIcons.o
 icon-dump: $(BUILD)/icon_dump
 
 $(BUILD)/capture_timing: tests/CaptureTiming.cpp $(BUILD)/src/capture/ScreenCapture.o
-	$(CXX) $(CPPFLAGS) $(APP_CPPFLAGS) $(CXXFLAGS) $(APP_LDFLAGS) -o $@ $^ -lbe $(APP_LDEND)
+	$(CXX) $(CPPFLAGS) $(APP_CPPFLAGS) $(CXXFLAGS) $(APP_LDFLAGS) -o $@ $^ -lbe -lgame $(APP_LDEND)
 
 capture-timing: $(BUILD)/capture_timing
 

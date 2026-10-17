@@ -32,7 +32,7 @@ INCLUDES+=" -isystem $HAIKU_SRC/headers/glibc"
 
 GLUE="$OBJECTS/system/glue"
 CRT="$HAIKU_BUILD/cross-tools-x86_64/lib/gcc/x86_64-unknown-haiku/13.3.0"
-LIBDIRS="-L$OBJECTS/kits -L$OBJECTS/kits/tracker -L$OBJECTS/kits/translation \
+LIBDIRS="-L$OBJECTS/kits -L$OBJECTS/kits/game -L$OBJECTS/kits/tracker -L$OBJECTS/kits/translation \
 	-L$OBJECTS/kits/shared -L$OBJECTS/system/libroot"
 START="-nodefaultlibs -nostartfiles $GLUE/arch/x86_64/crti.o $CRT/crtbeginS.o $GLUE/start_dyn.o $GLUE/init_term_dyn.o"
 END="$CRT/crtendS.o $GLUE/arch/x86_64/crtn.o"

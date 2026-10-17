@@ -9,6 +9,7 @@
 #include <math.h>
 
 #include "Export.h"
+#include "capture/ScreenCapture.h"
 
 namespace airshot {
 
@@ -85,11 +86,12 @@ void InlineTextView::MakeFocus(bool focus)
 //	#pragma mark - CanvasView
 
 
-CanvasView::CanvasView(BBitmap* bitmap, const Style& style)
+CanvasView::CanvasView(BBitmap* bitmap, const Style& style, float pixelScale)
 	:
 	BView("canvas", B_WILL_DRAW | B_FRAME_EVENTS | B_NAVIGABLE),
 	fTool(kToolSelect),
 	fStyle(style),
+	fPixelScale(pixelScale > 0 ? pixelScale : 1),
 	fZoom(1),
 	fOffset(0, 0),
 	fSelected(-1),
@@ -193,7 +195,7 @@ float CanvasView::FitZoom() const
 	BRect bounds = Bounds();
 	float zoomX = (bounds.Width() + 1) / (ImageBounds().Width() + 1);
 	float zoomY = (bounds.Height() + 1) / (ImageBounds().Height() + 1);
-	return fmaxf(kMinZoom, fminf(1.0f, fminf(zoomX, zoomY)));
+	return fmaxf(kMinZoom, fminf(ActualZoom(), fminf(zoomX, zoomY)));
 }
 
 
@@ -246,9 +248,6 @@ void CanvasView::Draw(BRect updateRect)
 
 	BRect imageUpdate = updateRect & image;
 	if (imageUpdate.IsValid()) {
-		PushState();
-		SetOrigin(fOffset);
-		SetScale(fZoom);
 		BRect source(_ToImage(imageUpdate.LeftTop()), _ToImage(imageUpdate.RightBottom()));
 		source.left = floorf(source.left);
 		source.top = floorf(source.top);
@@ -256,13 +255,32 @@ void CanvasView::Draw(BRect updateRect)
 		source.bottom = ceilf(source.bottom);
 		source = source & ImageBounds();
 		const BBitmap* base = fDocument.base.get();
-		if (base->ColorSpace() == B_RGBA32) {
-			SetHighColor(255, 255, 255);
-			FillRect(source);
-			SetDrawingMode(B_OP_ALPHA);
-			SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
+		// At actual size a capture in screen pixels goes back to the screen
+		// one to one, without the scaling that would soften it.
+		bool screenPixels = fPixelScale != 1 && fabsf(fZoom * fPixelScale - 1) < 0.001f;
+		if (screenPixels) {
+			if (base->ColorSpace() == B_RGBA32) {
+				SetHighColor(255, 255, 255);
+				FillRect(_ToView(source));
+				SetDrawingMode(B_OP_ALPHA);
+				SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
+			}
+			DrawBitmap(base, source, _ToView(source), kDevicePixelBitmap);
+			SetDrawingMode(B_OP_COPY);
 		}
-		DrawBitmap(base, source, source, fZoom < 1 ? B_FILTER_BITMAP_BILINEAR : 0);
+		PushState();
+		SetOrigin(fOffset);
+		SetScale(fZoom);
+		if (!screenPixels) {
+			if (base->ColorSpace() == B_RGBA32) {
+				SetHighColor(255, 255, 255);
+				FillRect(source);
+				SetDrawingMode(B_OP_ALPHA);
+				SetBlendingMode(B_PIXEL_ALPHA, B_ALPHA_OVERLAY);
+			}
+			DrawBitmap(base, source, source,
+				fZoom * fPixelScale < 1 ? B_FILTER_BITMAP_BILINEAR : 0);
+		}
 		for (const AnnotationRef& item : fDocument.items)
 			item->Draw(this, base);
 		if (fDrawing.get() != NULL)
@@ -410,6 +428,15 @@ void CanvasView::SetTool(Tool tool)
 }
 
 
+Style CanvasView::_ImageStyle() const
+{
+	Style style = fStyle;
+	style.strokeWidth *= fPixelScale;
+	style.fontSize *= fPixelScale;
+	return style;
+}
+
+
 void CanvasView::SetStyle(const Style& style)
 {
 	fStyle = style;
@@ -417,19 +444,20 @@ void CanvasView::SetStyle(const Style& style)
 		// Restyle the selected annotation, keeping its own fill/pixelate.
 		AnnotationRef item = fDocument.items[fSelected];
 		Style current = item->GetStyle();
-		if (current.color != style.color || current.strokeWidth != style.strokeWidth
-			|| current.fontSize != style.fontSize || current.filled != style.filled
-			|| current.pixelate != style.pixelate) {
+		Style wanted = _ImageStyle();
+		if (current.color != wanted.color || current.strokeWidth != wanted.strokeWidth
+			|| current.fontSize != wanted.fontSize || current.filled != wanted.filled
+			|| current.pixelate != wanted.pixelate) {
 			_Snapshot();
 			_InvalidateItem(item);
-			fDocument.items[fSelected]->SetStyle(style);
+			fDocument.items[fSelected]->SetStyle(wanted);
 			_InvalidateItem(fDocument.items[fSelected]);
 			_Changed();
 		}
 	}
 	if (fTextView != NULL) {
 		BFont font;
-		TextAnnotation::PrepareFont(font, fStyle.fontSize * fZoom);
+		TextAnnotation::PrepareFont(font, _ImageStyle().fontSize * fZoom);
 		fTextView->SetFontAndColor(&font, B_FONT_ALL, &fStyle.color);
 	}
 }
@@ -478,13 +506,14 @@ void CanvasView::_BeginText(BPoint imagePoint)
 	CommitText();
 	fTextPosition = imagePoint;
 	BFont font;
-	TextAnnotation::PrepareFont(font, fStyle.fontSize * fZoom);
+	float fontSize = _ImageStyle().fontSize * fZoom;
+	TextAnnotation::PrepareFont(font, fontSize);
 	font_height fh;
 	font.GetHeight(&fh);
 	float height = ceilf(fh.ascent + fh.descent + fh.leading) + 6;
 	BPoint origin = _ToView(imagePoint);
 	// The text starts where the user clicked; the box hangs off it.
-	BRect frame(origin.x - 4, origin.y - 2, origin.x + fmaxf(160, 14 * fStyle.fontSize * fZoom),
+	BRect frame(origin.x - 4, origin.y - 2, origin.x + fmaxf(160, 14 * fontSize),
 		origin.y + height);
 	fTextView = new InlineTextView(frame, BRect(4, 2, frame.Width() - 4, frame.Height() - 2));
 	fTextView->SetFontAndColor(&font, B_FONT_ALL, &fStyle.color);
@@ -502,7 +531,7 @@ void CanvasView::CommitText()
 	delete fTextView;
 	fTextView = NULL;
 	MakeFocus(true);
-	TextAnnotation* annotation = new TextAnnotation(fStyle);
+	TextAnnotation* annotation = new TextAnnotation(_ImageStyle());
 	annotation->SetPosition(fTextPosition);
 	annotation->SetText(text.String());
 	if (!annotation->IsUsable()) {
@@ -634,7 +663,7 @@ void CanvasView::MouseDown(BPoint where)
 			if (!ImageBounds().Contains(image))
 				break;
 			_Snapshot();
-			fDocument.items.push_back(AnnotationRef(new CounterAnnotation(fStyle, image,
+			fDocument.items.push_back(AnnotationRef(new CounterAnnotation(_ImageStyle(), image,
 				fDocument.nextCounter++)));
 			_InvalidateItem(fDocument.items.back());
 			_Changed();
@@ -657,7 +686,7 @@ void CanvasView::MouseDown(BPoint where)
 				case kToolBlur: type = kAnnotationBlur; break;
 				default: break;
 			}
-			fDrawing.reset(Annotation::Create(type, fStyle));
+			fDrawing.reset(Annotation::Create(type, _ImageStyle()));
 			fDrawing->SetEndPoints(image, image);
 			fDrawing->AddPoint(image);
 			fDrag = kDragCreate;

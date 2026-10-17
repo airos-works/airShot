@@ -63,8 +63,11 @@ set to zero. The 250 ms window-settle delay and the 150 ms cursor-hide delay
 are intentional; a multi-second gap at `grabbing screen` is in screen readback.
 
 `make capture-timing` builds a native probe using the same `GrabScreen` path.
-Run `build-haiku/capture_timing` to measure six captures, alternating cursor
-inclusion, and validate their dimensions. An optional limit in milliseconds
+Run `build-haiku/capture_timing` to measure eight captures, alternating cursor
+inclusion, and validate their dimensions; the last two ask for screen pixels,
+which on a scaled desktop come out larger by the scale (`scale=1.75` and
+9935x2160 instead of 5677x1234 on the Framework 13 laptop at 175%, about
+100 ms each). An optional limit in milliseconds
 turns it into a performance regression check, for example
 `build-haiku/capture_timing 1000` on X399. The limit is machine-dependent and
 is deliberately separate from the portable unit tests.
@@ -99,3 +102,8 @@ and undo/redo visibly dim and enable as the document history changes.
    recording), change the save folder, toggle the Deskbar icon.
 6. Deskbar icon menu: captures, open, settings, quit.
 7. `airShot picture.png` opens the file in the editor.
+8. On a scaled display (Screen preferences, 150 or 175%): a full-screen
+   capture is the screen's size in pixels (the settings show the scale), the
+   overlay looks exactly like the live screen, its size label counts screen
+   pixels, and the editor opens at 100% with sharp text; with *Scaled
+   displays* at 100% the captures are the logical size again.

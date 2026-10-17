@@ -20,20 +20,29 @@ int main(int argc, char** argv)
 	BApplication app("application/x-vnd.airOS-airShot-capture-timing");
 	BRect frame = BScreen().Frame();
 	bool passed = true;
-	for (int i = 0; i < 6; i++) {
+	for (int i = 0; i < 8; i++) {
 		bool cursor = (i % 2) != 0;
+		// The last two read the screen's own pixels when it is scaled.
+		bool screenPixels = i >= 6;
+		float scale = 0;
 		bigtime_t start = system_time();
-		BBitmap* bitmap = airshot::ScreenCapture::GrabScreen(cursor);
+		BBitmap* bitmap = airshot::ScreenCapture::GrabScreen(cursor, screenPixels, &scale);
 		bigtime_t elapsed = system_time() - start;
-		if (bitmap == NULL || bitmap->InitCheck() != B_OK
-			|| bitmap->Bounds().Width() != frame.Width()
-			|| bitmap->Bounds().Height() != frame.Height()) {
+		// A scaled buffer can end in a pixel that is only partly covered.
+		BRect expected = airshot::ScreenCapture::ToPixels(frame, scale);
+		if (bitmap == NULL || bitmap->InitCheck() != B_OK || scale < 1
+			|| (!screenPixels && scale != 1)
+			|| bitmap->Bounds().Width() < expected.Width()
+			|| bitmap->Bounds().Width() > expected.Width() + (scale != 1 ? 1 : 0)
+			|| bitmap->Bounds().Height() < expected.Height()
+			|| bitmap->Bounds().Height() > expected.Height() + (scale != 1 ? 1 : 0)) {
 			fprintf(stderr, "capture %d: missing or incorrectly sized bitmap\n", i + 1);
 			delete bitmap;
 			return 1;
 		}
-		printf("capture %d: %.0fx%.0f, cursor=%d, %.1f ms\n", i + 1,
-			frame.Width() + 1, frame.Height() + 1, cursor, elapsed / 1000.0);
+		printf("capture %d: %.0fx%.0f, cursor=%d, scale=%g, %.1f ms\n", i + 1,
+			bitmap->Bounds().Width() + 1, bitmap->Bounds().Height() + 1, cursor, scale,
+			elapsed / 1000.0);
 		if (limit != 0 && elapsed > limit * 1000LL)
 			passed = false;
 		delete bitmap;

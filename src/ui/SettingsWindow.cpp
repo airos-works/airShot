@@ -13,7 +13,10 @@
 #include <SeparatorView.h>
 #include <StringView.h>
 
+#include <math.h>
+
 #include "Messages.h"
+#include "capture/ScreenCapture.h"
 
 namespace airshot {
 
@@ -23,6 +26,7 @@ constexpr uint32 kMsgKeyChanged = 'KeyC';
 constexpr uint32 kMsgOptionChanged = 'OptC';
 constexpr uint32 kMsgDelayChanged = 'DlyC';
 constexpr uint32 kMsgAfterChanged = 'AftC';
+constexpr uint32 kMsgResolutionChanged = 'ResC';
 constexpr uint32 kMsgBrowseFolder = 'Brws';
 constexpr uint32 kMsgDefaults = 'Dflt';
 
@@ -60,6 +64,10 @@ SettingsWindow::SettingsWindow(const Settings& settings)
 	fAnimate = new BCheckBox("animate", "Animate the selection highlight",
 		new BMessage(kMsgOptionChanged));
 	fDelay = _MakeDelayField();
+	fResolution = _MakeResolutionField();
+	fScaleHint = new BStringView("scaleHint", "");
+	fScaleHint->SetFont(be_plain_font);
+	fScaleHint->SetHighUIColor(B_PANEL_TEXT_COLOR, B_DISABLED_LABEL_TINT);
 
 	fAfter = _MakeAfterField();
 	fCopyWhenSaving = new BCheckBox("copyWhenSaving", "Also copy to the clipboard when saving",
@@ -110,7 +118,12 @@ SettingsWindow::SettingsWindow(const Settings& settings)
 		.AddGroup(B_HORIZONTAL)
 			.Add(fDelay)
 			.AddGlue()
-		.End();
+		.End()
+		.AddGroup(B_HORIZONTAL)
+			.Add(fResolution)
+			.AddGlue()
+		.End()
+		.Add(fScaleHint);
 
 	BBox* after = new BBox("after");
 	after->SetLabel("After capturing");
@@ -188,6 +201,32 @@ BMenuField* SettingsWindow::_MakeAfterField()
 }
 
 
+BMenuField* SettingsWindow::_MakeResolutionField()
+{
+	BPopUpMenu* menu = new BPopUpMenu("resolution");
+	menu->SetRadioMode(true);
+	const char* labels[] = {"Capture at screen resolution", "Capture at 100% scale"};
+	for (int32 i = 0; i < 2; i++) {
+		BMessage* message = new BMessage(kMsgResolutionChanged);
+		message->AddBool("screen", i == 0);
+		menu->AddItem(new BMenuItem(labels[i], message));
+	}
+	return new BMenuField("resolution", "Scaled displays:", menu);
+}
+
+
+void SettingsWindow::_UpdateScaleHint()
+{
+	float scale = ScreenCapture::DeviceScale();
+	BString text;
+	if (scale > 1)
+		text.SetToFormat("This screen is scaled to %d%%.", (int)roundf(scale * 100));
+	else
+		text = "This screen is not scaled; both capture the same pixels.";
+	fScaleHint->SetText(text.String());
+}
+
+
 void SettingsWindow::_LoadControls()
 {
 	fLoading = true;
@@ -204,6 +243,8 @@ void SettingsWindow::_LoadControls()
 	}
 	if (fDelay->Menu()->FindMarked() == NULL)
 		fDelay->Menu()->ItemAt(0)->SetMarked(true);
+	fResolution->Menu()->ItemAt(fSettings.captureScreenResolution ? 0 : 1)->SetMarked(true);
+	_UpdateScaleHint();
 	int32 after = fSettings.afterCapture;
 	if (after < 0 || after > 2)
 		after = 0;
@@ -237,6 +278,9 @@ void SettingsWindow::_Apply()
 	BMenuItem* marked = fDelay->Menu()->FindMarked();
 	if (marked != NULL)
 		fSettings.delaySeconds = marked->Message()->GetInt32("delay", 0);
+	marked = fResolution->Menu()->FindMarked();
+	if (marked != NULL)
+		fSettings.captureScreenResolution = marked->Message()->GetBool("screen", true);
 	marked = fAfter->Menu()->FindMarked();
 	if (marked != NULL)
 		fSettings.afterCapture = marked->Message()->GetInt32("after", kAfterOpenEditor);
@@ -308,6 +352,7 @@ void SettingsWindow::MessageReceived(BMessage* message)
 
 		case kMsgOptionChanged:
 		case kMsgDelayChanged:
+		case kMsgResolutionChanged:
 		case kMsgAfterChanged:
 			_Apply();
 			break;
@@ -351,6 +396,13 @@ void SettingsWindow::MessageReceived(BMessage* message)
 		default:
 			BWindow::MessageReceived(message);
 	}
+}
+
+
+void SettingsWindow::ScreenChanged(BRect frame, color_space mode)
+{
+	BWindow::ScreenChanged(frame, mode);
+	_UpdateScaleHint();
 }
 
 

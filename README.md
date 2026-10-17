@@ -9,6 +9,9 @@ Flameshot.
 - **An editor for markup**: arrows, lines, rectangles, ellipses, a freehand
   pen, a highlighter, text, numbered markers, blur/pixelate and crop, with
   undo/redo, a colour palette and zoom.
+- **Sharp on scaled displays**: with HiDPI or fractional scaling (125%, 175%…)
+  captures keep every pixel of the screen by default instead of being
+  averaged down to 100%; *Settings… ▸ Scaled displays* switches to 100%.
 - **Fast output**: save as PNG into a folder of your choice with a time-stamped
   name, or copy to the clipboard; desktop notifications confirm both.
 - **Haiku native**: an `input_server` add-on provides the global shortcuts, a
@@ -59,6 +62,10 @@ the add-on is installed.
 | R   | Rectangle   | B   | Blur         |
 | E   | Ellipse     | C   | Crop         |
 | P   | Pen         |     |              |
+
+A capture in screen pixels opens at its actual size, pixel for pixel as it
+was on the screen (100% in the status bar); annotation widths and font sizes
+are in screen units, so they look the same at any display scale.
 
 `Alt+S` saves (to the configured folder, or the file it was saved to before),
 `Shift+Alt+S` saves elsewhere, `Alt+C` copies the image, `Alt+Z`/`Shift+Alt+Z`

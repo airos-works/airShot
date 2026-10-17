@@ -46,8 +46,9 @@ float Ease(float from, float to)
 //	#pragma mark - OverlayWindow
 
 
-OverlayWindow::OverlayWindow(const BBitmap* screen, const std::vector<WindowEntry>& windows,
-	CaptureKind mode, bool animate, bool includeDecorations, const BMessenger& target)
+OverlayWindow::OverlayWindow(const BBitmap* screen, float pixelScale,
+	const std::vector<WindowEntry>& windows, CaptureKind mode, bool animate,
+	bool includeDecorations, const BMessenger& target)
 	:
 	// The same window type Haiku's own Screenshot uses for its area
 	// selector: borderless, above everything including Deskbar.
@@ -57,7 +58,8 @@ OverlayWindow::OverlayWindow(const BBitmap* screen, const std::vector<WindowEntr
 	fTarget(target),
 	fFinished(false)
 {
-	fView = new OverlayView(Bounds(), screen, windows, mode, animate, includeDecorations);
+	fView = new OverlayView(Bounds(), screen, pixelScale, windows, mode, animate,
+		includeDecorations);
 	AddChild(fView);
 	fView->MakeFocus(true);
 }
@@ -94,12 +96,13 @@ void OverlayWindow::Finish(BMessage* result)
 //	#pragma mark - OverlayView
 
 
-OverlayView::OverlayView(BRect frame, const BBitmap* screen,
+OverlayView::OverlayView(BRect frame, const BBitmap* screen, float pixelScale,
 	const std::vector<WindowEntry>& windows, CaptureKind mode, bool animate,
 	bool includeDecorations)
 	:
 	BView(frame, "overlay", B_FOLLOW_ALL, B_WILL_DRAW),
 	fScreen(screen),
+	fPixelScale(pixelScale),
 	fDimmed(NULL),
 	fWindows(windows),
 	fMode(mode),
@@ -149,6 +152,20 @@ void OverlayView::_MakeDimmedCopy()
 	uint32* end = pixel + fDimmed->BitsLength() / 4;
 	for (; pixel < end; pixel++)
 		*pixel = ((*pixel >> 1) & 0x7f7f7f7f) + ((*pixel >> 3) & 0x1f1f1f1f);
+}
+
+
+void OverlayView::_DrawScreen(const BBitmap* bitmap, BRect rect)
+{
+	if (fPixelScale == 1) {
+		DrawBitmap(bitmap, rect, rect);
+		return;
+	}
+	// Screen pixels go back one to one, from the pixel the rectangle starts
+	// on, so the frozen screen looks exactly like the live one.
+	BRect pixels = ScreenCapture::ToPixels(rect, fPixelScale) & bitmap->Bounds();
+	if (pixels.IsValid())
+		DrawBitmap(bitmap, pixels, rect, kDevicePixelBitmap);
 }
 
 
@@ -280,11 +297,11 @@ void OverlayView::Draw(BRect updateRect)
 		clipping.Set(updateRect);
 	for (int32 i = 0; i < clipping.CountRects(); i++) {
 		BRect rect = clipping.RectAt(i);
-		DrawBitmap(fDimmed != NULL ? fDimmed : fScreen, rect, rect);
+		_DrawScreen(fDimmed != NULL ? fDimmed : fScreen, rect);
 		if (fShown.IsValid()) {
 			BRect bright = fShown & rect;
 			if (bright.IsValid())
-				DrawBitmap(fScreen, bright, bright);
+				_DrawScreen(fScreen, bright);
 		}
 	}
 
@@ -480,6 +497,8 @@ void OverlayView::_DrawCrosshair(BRect updateRect)
 
 BString OverlayView::_SizeLabel(BRect rect) const
 {
+	// The size of the picture, which is in screen pixels on a scaled screen.
+	rect = ScreenCapture::ToPixels(rect, fPixelScale);
 	BString text;
 	text.SetToFormat("%d \xc3\x97 %d", (int)rect.Width() + 1, (int)rect.Height() + 1);
 	return text;

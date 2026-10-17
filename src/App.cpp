@@ -12,6 +12,7 @@
 #include <TranslationUtils.h>
 #include <View.h>
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -52,6 +53,7 @@ App::App()
 	fMainWindow(NULL),
 	fSettingsWindow(NULL),
 	fScreen(NULL),
+	fScreenScale(1),
 	fPendingKind(kCaptureFull),
 	fCapturing(false),
 	fCaptureRequested(false),
@@ -152,7 +154,7 @@ void App::RefsReceived(BMessage* message)
 			delete loaded;
 			loaded = converted;
 		}
-		_OpenEditor(loaded);
+		_OpenEditor(loaded, 1);
 	}
 }
 
@@ -265,8 +267,9 @@ void App::_CaptureNow()
 	delete fDelayRunner;
 	fDelayRunner = NULL;
 	delete fScreen;
-	fScreen = ScreenCapture::GrabScreen(fSettings.includeCursor);
-	TraceCapture("screen grabbed");
+	fScreen = ScreenCapture::GrabScreen(fSettings.includeCursor,
+		fSettings.captureScreenResolution, &fScreenScale);
+	TraceCapture(fScreenScale != 1 ? "screen grabbed in screen pixels" : "screen grabbed");
 	if (fScreen == NULL) {
 		fCapturing = false;
 		(new BAlert("Capture failed", "airShot could not read the screen.", "OK", NULL, NULL,
@@ -276,13 +279,13 @@ void App::_CaptureNow()
 	if (fPendingKind == kCaptureFull) {
 		BBitmap* screen = fScreen;
 		fScreen = NULL;
-		_Finish(screen);
+		_Finish(screen, fScreenScale);
 		return;
 	}
 	std::vector<WindowEntry> windows;
 	ScreenCapture::ListWindows(windows, Team());
 	TraceCapture("windows listed");
-	OverlayWindow* overlay = new OverlayWindow(fScreen, windows, fPendingKind,
+	OverlayWindow* overlay = new OverlayWindow(fScreen, fScreenScale, windows, fPendingKind,
 		fSettings.animateSelection, fSettings.includeDecorations, BMessenger(this));
 	TraceCapture("overlay constructed");
 	overlay->Show();
@@ -317,26 +320,29 @@ void App::_OverlayDone(BMessage* message)
 		entry.desktop = false;
 		BRect tabFrame;
 		if (ScreenCapture::TabFrameFor(entry, tabFrame) == B_OK) {
-			result = ScreenCapture::Crop(fScreen, frame, true);
+			BRect pixels = ScreenCapture::ToPixels(frame, fScreenScale);
+			result = ScreenCapture::Crop(fScreen, pixels, true);
 			if (result != NULL) {
-				ScreenCapture::ClearTabSpace(result, frame.OffsetToCopy(B_ORIGIN),
-					tabFrame.OffsetByCopy(-frame.left, -frame.top), tabHeight);
+				ScreenCapture::ClearTabSpace(result, pixels.OffsetToCopy(B_ORIGIN),
+					ScreenCapture::ToPixels(tabFrame, fScreenScale)
+						.OffsetByCopy(-pixels.left, -pixels.top),
+					floorf(tabHeight * fScreenScale));
 			}
 		}
 	}
 	if (result == NULL)
-		result = ScreenCapture::Crop(fScreen, frame, false);
+		result = ScreenCapture::Crop(fScreen, ScreenCapture::ToPixels(frame, fScreenScale), false);
 	delete fScreen;
 	fScreen = NULL;
 	if (result == NULL) {
 		fCapturing = false;
 		return;
 	}
-	_Finish(result);
+	_Finish(result, fScreenScale);
 }
 
 
-void App::_Finish(BBitmap* bitmap)
+void App::_Finish(BBitmap* bitmap, float pixelScale)
 {
 	fCapturing = false;
 	switch (fSettings.afterCapture) {
@@ -375,15 +381,15 @@ void App::_Finish(BBitmap* bitmap)
 		}
 
 		default:
-			_OpenEditor(bitmap);
+			_OpenEditor(bitmap, pixelScale);
 			break;
 	}
 }
 
 
-void App::_OpenEditor(BBitmap* bitmap)
+void App::_OpenEditor(BBitmap* bitmap, float pixelScale)
 {
-	EditorWindow* editor = new EditorWindow(bitmap, fSettings);
+	EditorWindow* editor = new EditorWindow(bitmap, fSettings, pixelScale);
 	editor->Show();
 }
 

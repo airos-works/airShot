@@ -3,8 +3,11 @@
 #include <Bitmap.h>
 #include <Box.h>
 #include <Layout.h>
+#include <MenuField.h>
+#include <MenuItem.h>
 #include <Screen.h>
 #include <TextControl.h>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include "ui/MainWindow.h"
@@ -66,6 +69,13 @@ int main()
             CHECK(!key->IsRecording());
             CHECK(key->Key() == settings.fullHotKey);
         }
+        // Captures on scaled displays default to the screen's resolution.
+        auto* resolution = dynamic_cast<BMenuField*>(window->FindView("resolution"));
+        CHECK(resolution != nullptr);
+        if (resolution) {
+            BMenuItem* marked = resolution->Menu()->FindMarked();
+            CHECK(marked != nullptr && resolution->Menu()->IndexOf(marked) == 0);
+        }
         window->Quit();
 
         auto* main = new MainWindow(settings);
@@ -83,6 +93,15 @@ int main()
         editor->UpdateIfNeeded();
         CheckWindow(editor);
         editor->Quit();
+
+        // A capture in the pixels of a 200% screen opens at actual size,
+        // half an image pixel per coordinate unit.
+        auto* scaled = new EditorWindow(new BBitmap(BRect(0, 0, 319, 239), B_RGB32), settings, 2);
+        scaled->Show(); snooze(100000); scaled->Lock();
+        auto* canvas = dynamic_cast<CanvasView*>(scaled->FindView("canvas"));
+        CHECK(canvas != nullptr);
+        if (canvas) CHECK(std::fabs(canvas->Zoom() - 0.5f) < 0.01f);
+        scaled->Quit();
     }
     *const_cast<BFont*>(be_plain_font) = originalPlain;
     *const_cast<BFont*>(be_bold_font) = originalBold;

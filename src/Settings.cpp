@@ -50,6 +50,7 @@ void Settings::SetDefaults()
 	delaySeconds = 0;
 	includeDecorations = true;
 	animateSelection = true;
+	captureScreenResolution = true;
 
 	afterCapture = kAfterOpenEditor;
 	copyWhenSaving = true;
@@ -142,6 +143,7 @@ void Settings::ToMessage(BMessage& message) const
 	message.AddInt32("delay_seconds", delaySeconds);
 	message.AddBool("include_decorations", includeDecorations);
 	message.AddBool("animate_selection", animateSelection);
+	message.AddBool("capture_screen_resolution", captureScreenResolution);
 
 	message.AddInt32("after_capture", afterCapture);
 	message.AddBool("copy_when_saving", copyWhenSaving);
@@ -170,6 +172,8 @@ void Settings::FromMessage(const BMessage& message)
 	delaySeconds = message.GetInt32("delay_seconds", delaySeconds);
 	includeDecorations = message.GetBool("include_decorations", includeDecorations);
 	animateSelection = message.GetBool("animate_selection", animateSelection);
+	captureScreenResolution = message.GetBool("capture_screen_resolution",
+		captureScreenResolution);
 
 	afterCapture = message.GetInt32("after_capture", afterCapture);
 	copyWhenSaving = message.GetBool("copy_when_saving", copyWhenSaving);

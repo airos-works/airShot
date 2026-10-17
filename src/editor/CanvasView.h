@@ -43,7 +43,11 @@ public:
 
 class CanvasView : public BView {
 public:
-								CanvasView(BBitmap* bitmap, const Style& style);
+	// pixelScale: image pixels per screen coordinate unit, more than 1 for
+	// a capture in the pixels of a scaled screen. The style's sizes are in
+	// screen units and become that many image pixels.
+								CanvasView(BBitmap* bitmap, const Style& style,
+									float pixelScale = 1);
 	virtual						~CanvasView();
 
 	virtual	void				AttachedToWindow();
@@ -64,6 +68,9 @@ public:
 			void				SetZoom(float zoom, BPoint anchor = BPoint(-1, -1));
 			void				ZoomToFit();
 			float				FitZoom() const;
+			float				PixelScale() const { return fPixelScale; }
+			// The zoom at which an image pixel is a screen pixel.
+			float				ActualZoom() const { return 1 / fPixelScale; }
 
 			bool				CanUndo() const { return !fUndo.empty(); }
 			bool				CanRedo() const { return !fRedo.empty(); }
@@ -109,12 +116,14 @@ private:
 			void				_DrawSelection();
 			void				_UpdateCursor(BPoint viewPoint);
 			void				_SendStatus(BPoint imagePoint);
+			Style				_ImageStyle() const;
 
 			Document			fDocument;
 			std::vector<Document> fUndo;
 			std::vector<Document> fRedo;
 			Tool				fTool;
 			Style				fStyle;
+			float				fPixelScale;
 			float				fZoom;
 			BPoint				fOffset;   // where the image's origin is, in view coordinates
 			int32				fSelected;

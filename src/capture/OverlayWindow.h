@@ -22,7 +22,8 @@ class OverlayView;
 
 class OverlayWindow : public BWindow {
 public:
-								OverlayWindow(const BBitmap* screen,
+	// pixelScale: screen pixels per coordinate unit (ScreenCapture::GrabScreen).
+								OverlayWindow(const BBitmap* screen, float pixelScale,
 									const std::vector<WindowEntry>& windows, CaptureKind mode,
 									bool animate, bool includeDecorations,
 									const BMessenger& target);
@@ -41,7 +42,7 @@ private:
 
 class OverlayView : public BView {
 public:
-								OverlayView(BRect frame, const BBitmap* screen,
+								OverlayView(BRect frame, const BBitmap* screen, float pixelScale,
 									const std::vector<WindowEntry>& windows, CaptureKind mode,
 									bool animate, bool includeDecorations);
 	virtual						~OverlayView();
@@ -72,6 +73,7 @@ private:
 	};
 
 			void				_MakeDimmedCopy();
+			void				_DrawScreen(const BBitmap* bitmap, BRect rect);
 			int32				_WindowAt(BPoint where) const;
 			void				_SetTarget(BRect target, bool immediate);
 			void				_Tick();
@@ -94,6 +96,7 @@ private:
 			BString				_SizeLabel(BRect rect) const;
 
 			const BBitmap*		fScreen;
+			float				fPixelScale;
 			BBitmap*			fDimmed;
 			std::vector<WindowEntry> fWindows;
 			CaptureKind			fMode;

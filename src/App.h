@@ -34,8 +34,8 @@ private:
 			void				_StartCapture(CaptureKind kind);
 			void				_CaptureNow();
 			void				_OverlayDone(BMessage* message);
-			void				_Finish(BBitmap* bitmap);
-			void				_OpenEditor(BBitmap* bitmap);
+			void				_Finish(BBitmap* bitmap, float pixelScale);
+			void				_OpenEditor(BBitmap* bitmap, float pixelScale);
 			void				_ShowMainWindow();
 			void				_ShowSettings();
 			void				_ApplySettings(const Settings& settings);
@@ -48,6 +48,7 @@ private:
 			MainWindow*			fMainWindow;
 			SettingsWindow*		fSettingsWindow;
 			BBitmap*			fScreen;
+			float				fScreenScale;  // fScreen pixels per screen coordinate unit
 			CaptureKind			fPendingKind;
 			bool				fCapturing;
 			bool				fCaptureRequested;

@@ -4,6 +4,7 @@
 #include <CheckBox.h>
 #include <FilePanel.h>
 #include <MenuField.h>
+#include <StringView.h>
 #include <TextControl.h>
 #include <Window.h>
 
@@ -20,6 +21,7 @@ public:
 	virtual	void				MessageReceived(BMessage* message);
 	virtual	void				DispatchMessage(BMessage* message, BHandler* handler);
 	virtual	bool				QuitRequested();
+	virtual	void				ScreenChanged(BRect frame, color_space mode);
 
 			void				Update(const Settings& settings);
 
@@ -28,6 +30,8 @@ private:
 			void				_LoadControls();
 			BMenuField*			_MakeDelayField();
 			BMenuField*			_MakeAfterField();
+			BMenuField*			_MakeResolutionField();
+			void				_UpdateScaleHint();
 
 			Settings			fSettings;
 			KeyCaptureControl*	fFullKey;
@@ -38,6 +42,8 @@ private:
 			BCheckBox*			fIncludeDecorations;
 			BCheckBox*			fAnimate;
 			BMenuField*			fDelay;
+			BMenuField*			fResolution;
+			BStringView*		fScaleHint;
 			BMenuField*			fAfter;
 			BCheckBox*			fCopyWhenSaving;
 			BTextControl*		fSaveFolder;

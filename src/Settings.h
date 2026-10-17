@@ -41,6 +41,8 @@ public:
 			int32				delaySeconds;
 			bool				includeDecorations;
 			bool				animateSelection;
+			// On a scaled display: the screen's own pixels rather than 100%.
+			bool				captureScreenResolution;
 
 	// After a capture
 			int32				afterCapture;
