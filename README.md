@@ -21,14 +21,14 @@ Flameshot.
 <!-- airos-ci:latest-builds:start -->
 ## Latest builds
 
-Built automatically by air/OS CI from commit `6793940` on 2026-10-26 ([all files](https://github.com/jmgasper/airShot/releases/tag/latest)).
+Built automatically by air/OS CI from commit `a2a67b5` on 2026-10-26 ([all files](https://github.com/jmgasper/airShot/releases/tag/latest)).
 
 | Architecture | Package |
 |---|---|
-| arm64 | [airshot-0.1.0.beta-9-arm64.hpkg](https://github.com/jmgasper/airShot/releases/download/latest/airshot-0.1.0.beta-9-arm64.hpkg) |
-| x86_64 | [airshot-0.1.0.beta-9-x86_64.hpkg](https://github.com/jmgasper/airShot/releases/download/latest/airshot-0.1.0.beta-9-x86_64.hpkg) |
+| arm64 | [airshot-0.1.0.beta-10-arm64.hpkg](https://github.com/jmgasper/airShot/releases/download/latest/airshot-0.1.0.beta-10-arm64.hpkg) |
+| x86_64 | [airshot-0.1.0.beta-10-x86_64.hpkg](https://github.com/jmgasper/airShot/releases/download/latest/airshot-0.1.0.beta-10-x86_64.hpkg) |
 
-Install with `pkgman install <file>`, or copy the file into `/boot/system/packages`. Haiku SDK: x86_64 hrev60207-1949-g1e251ab68e, arm64 hrev60207-1942-g7ae85ccb57.
+Install with `pkgman install <file>`, or copy the file into `/boot/system/packages`. Haiku SDK: x86_64 hrev60207-1953-g8ee0ba601e, arm64 hrev60207-1961-g0896809a2e.
 <!-- airos-ci:latest-builds:end -->
 
 ## Default shortcuts
