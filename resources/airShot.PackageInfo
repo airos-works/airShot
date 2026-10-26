@@ -1,5 +1,5 @@
 name airshot
-version 0.1.0~beta-9
+version 0.1.0~beta-10
 architecture x86_64
 summary "Screenshot and markup tool"
 description "airShot captures the whole screen, a window (highlighted as you point at it) or a region you draw, with configurable keyboard shortcuts that work in the background. The captured image opens in an editor with arrows, lines, boxes, ellipses, freehand pen, highlighter, text, numbered markers, blur and crop tools, and can be saved as PNG or copied to the clipboard. An input_server add-on provides the shortcuts; a Deskbar tray icon offers quick access."

@@ -1,8 +1,8 @@
 # airShot application icon
 
-Redesigned 2026-10-26. All artwork is contributor-original and licensed under
+Redesigned and refined following visual review on 2026-10-26. All artwork is contributor-original and licensed under
 this project's [MIT licence](../LICENSE). No external visual assets or fonts
-are used by the generator. Paths below are relative to `resources/`.
+are used by the generator. The current design is a snapshot camera with an annotation pencil. Paths below are relative to `resources/`.
 
 | File | Author | Source | Licence |
 | --- | --- | --- | --- |

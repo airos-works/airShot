@@ -109,9 +109,9 @@ Inc., licensed under CC BY 4.0. See [icon sources and attribution](resources/ico
 
 ## Native application icon
 
-The icon was redesigned on 26 October 2026 as an original screen capture with selection brackets and an annotation pencil.
+The icon was redesigned on 26 October 2026 as an original snapshot camera with an annotation pencil.
 It follows the [Haiku icon guidelines](https://www.haiku-os.org/development/icon-guidelines):
-upright edges, perspective with 2:1 front and 1:1 receding floor-contact edges,
+upright edges and restrained perspective,
 light from the upper left, darker right faces, a rightward floor shadow and
 a black silhouette outline one pixel wide at 32px. Broad details target 16px
 and 32px. The artwork is MIT-licensed and drawn directly in vectors, without
@@ -134,4 +134,4 @@ g++ -std=c++17 tools/render-icon.cpp -o /tmp/render-airshot-icon -lbe -ltranslat
 The checked-in PNG preview is a native render. Check changes at 16, 32, 64 and
 128px on light and dark backgrounds before replacing the icon.
 [Artwork attribution](resources/ICON-ATTRIBUTION.md) records the files and licence.
-Package version `0.1.0~beta-9` includes this update.
+Package version `0.1.0~beta-10` includes this refinement.
