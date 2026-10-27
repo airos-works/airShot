@@ -21,7 +21,7 @@ Flameshot.
 <!-- airos-ci:latest-builds:start -->
 ## Latest builds
 
-Built automatically by air/OS CI from commit `d779abf` on 2026-10-27 ([all files](https://github.com/airos-works/airShot/releases/tag/latest)).
+Built automatically by air/OS CI from commit `49d7749` on 2026-10-27 ([all files](https://github.com/airos-works/airShot/releases/tag/latest)).
 
 | Architecture | Package |
 |---|---|
