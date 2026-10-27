@@ -31,12 +31,18 @@ private:
 			BMenuField*			_MakeDelayField();
 			BMenuField*			_MakeAfterField();
 			BMenuField*			_MakeResolutionField();
+			BMenuField*			_MakePrintScreenField();
+			KeyCaptureControl*	_KeyControlFor(int32 kind);
+			int32				_PrintScreenKind();
+			void				_SetPrintScreenKind(int32 kind);
+			void				_UpdatePrintScreenField();
 			void				_UpdateScaleHint();
 
 			Settings			fSettings;
 			KeyCaptureControl*	fFullKey;
 			KeyCaptureControl*	fWindowKey;
 			KeyCaptureControl*	fRegionKey;
+			BMenuField*			fPrintScreen;
 			BCheckBox*			fLaunchOnHotKey;
 			BCheckBox*			fIncludeCursor;
 			BCheckBox*			fIncludeDecorations;

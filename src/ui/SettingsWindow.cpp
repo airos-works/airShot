@@ -27,11 +27,18 @@ constexpr uint32 kMsgOptionChanged = 'OptC';
 constexpr uint32 kMsgDelayChanged = 'DlyC';
 constexpr uint32 kMsgAfterChanged = 'AftC';
 constexpr uint32 kMsgResolutionChanged = 'ResC';
+constexpr uint32 kMsgPrintScreenChanged = 'PrtC';
 constexpr uint32 kMsgBrowseFolder = 'Brws';
 constexpr uint32 kMsgDefaults = 'Dflt';
 
 const int32 kDelays[] = {0, 1, 2, 3, 5, 10};
 const int32 kDelayCount = 6;
+
+// The "Print Screen key" menu, in item order; -1 leaves the key to Haiku.
+const int32 kPrintScreenKinds[] = {kCaptureFull, kCaptureWindow, kCaptureRegion, -1};
+const int32 kPrintScreenKindCount = 4;
+
+const HotKey kPrintScreen(kKeyPrintScreen, 0, "Print Screen");
 
 }  // namespace
 
@@ -52,6 +59,7 @@ SettingsWindow::SettingsWindow(const Settings& settings)
 		new BMessage(kMsgKeyChanged));
 	fRegionKey = new KeyCaptureControl("regionKey", settings.regionHotKey,
 		new BMessage(kMsgKeyChanged));
+	fPrintScreen = _MakePrintScreenField();
 	fLaunchOnHotKey = new BCheckBox("launch",
 		"Start airShot when a shortcut is pressed while it is not running",
 		new BMessage(kMsgOptionChanged));
@@ -97,14 +105,15 @@ SettingsWindow::SettingsWindow(const Settings& settings)
 	shortcuts->AddChild(shortcutsGrid);
 	BLayoutBuilder::Grid<>(shortcutsGrid)
 		.SetInsets(B_USE_DEFAULT_SPACING)
-		.Add(new BStringView("l1", "Full screen:"), 0, 0)
-		.Add(fFullKey, 1, 0)
-		.Add(new BStringView("l2", "Window:"), 0, 1)
-		.Add(fWindowKey, 1, 1)
-		.Add(new BStringView("l3", "Region:"), 0, 2)
-		.Add(fRegionKey, 1, 2)
-		.Add(hint, 0, 3, 2)
-		.Add(fLaunchOnHotKey, 0, 4, 2);
+		.AddMenuField(fPrintScreen, 0, 0)
+		.Add(new BStringView("l1", "Full screen:"), 0, 1)
+		.Add(fFullKey, 1, 1)
+		.Add(new BStringView("l2", "Window:"), 0, 2)
+		.Add(fWindowKey, 1, 2)
+		.Add(new BStringView("l3", "Region:"), 0, 3)
+		.Add(fRegionKey, 1, 3)
+		.Add(hint, 0, 4, 2)
+		.Add(fLaunchOnHotKey, 0, 5, 2);
 
 	BBox* capture = new BBox("capture");
 	capture->SetLabel("Capturing");
@@ -215,6 +224,74 @@ BMenuField* SettingsWindow::_MakeResolutionField()
 }
 
 
+BMenuField* SettingsWindow::_MakePrintScreenField()
+{
+	BPopUpMenu* menu = new BPopUpMenu("printScreen");
+	menu->SetRadioMode(true);
+	const char* labels[] = {"Captures the full screen", "Captures a window",
+		"Captures a region", "Is not used by airShot"};
+	for (int32 i = 0; i < kPrintScreenKindCount; i++) {
+		BMessage* message = new BMessage(kMsgPrintScreenChanged);
+		message->AddInt32("kind", kPrintScreenKinds[i]);
+		menu->AddItem(new BMenuItem(labels[i], message));
+	}
+	return new BMenuField("printScreen", "Print Screen key:", menu);
+}
+
+
+KeyCaptureControl* SettingsWindow::_KeyControlFor(int32 kind)
+{
+	switch (kind) {
+		case kCaptureFull:
+			return fFullKey;
+		case kCaptureWindow:
+			return fWindowKey;
+		case kCaptureRegion:
+			return fRegionKey;
+		default:
+			return NULL;
+	}
+}
+
+
+// Which capture Print Screen on its own starts, or -1 for none.
+int32 SettingsWindow::_PrintScreenKind()
+{
+	for (int32 kind : {kCaptureFull, kCaptureWindow, kCaptureRegion}) {
+		if (_KeyControlFor(kind)->Key() == kPrintScreen)
+			return kind;
+	}
+	return -1;
+}
+
+
+// Gives Print Screen to another capture. The two swap shortcuts, so with the
+// defaults choosing "region" moves full screen to Ctrl+Print Screen and every
+// capture keeps a key.
+void SettingsWindow::_SetPrintScreenKind(int32 kind)
+{
+	KeyCaptureControl* target = _KeyControlFor(kind);
+	KeyCaptureControl* current = _KeyControlFor(_PrintScreenKind());
+	if (target == current)
+		return;
+	HotKey previous = target != NULL ? target->Key() : HotKey();
+	if (target != NULL)
+		target->SetKey(kPrintScreen);
+	if (current != NULL)
+		current->SetKey(previous);
+}
+
+
+void SettingsWindow::_UpdatePrintScreenField()
+{
+	int32 kind = _PrintScreenKind();
+	for (int32 i = 0; i < kPrintScreenKindCount; i++) {
+		if (kPrintScreenKinds[i] == kind)
+			fPrintScreen->Menu()->ItemAt(i)->SetMarked(true);
+	}
+}
+
+
 void SettingsWindow::_UpdateScaleHint()
 {
 	float scale = ScreenCapture::DeviceScale();
@@ -233,6 +310,7 @@ void SettingsWindow::_LoadControls()
 	fFullKey->SetKey(fSettings.fullHotKey);
 	fWindowKey->SetKey(fSettings.windowHotKey);
 	fRegionKey->SetKey(fSettings.regionHotKey);
+	_UpdatePrintScreenField();
 	fLaunchOnHotKey->SetValue(fSettings.launchOnHotKey ? B_CONTROL_ON : B_CONTROL_OFF);
 	fIncludeCursor->SetValue(fSettings.includeCursor ? B_CONTROL_ON : B_CONTROL_OFF);
 	fIncludeDecorations->SetValue(fSettings.includeDecorations ? B_CONTROL_ON : B_CONTROL_OFF);
@@ -346,9 +424,16 @@ void SettingsWindow::MessageReceived(BMessage* message)
 					&& control->Key() == changed->Key())
 					control->SetKey(HotKey());
 			}
+			_UpdatePrintScreenField();
 			_Apply();
 			break;
 		}
+
+		case kMsgPrintScreenChanged:
+			_SetPrintScreenKind(message->GetInt32("kind", -1));
+			_UpdatePrintScreenField();
+			_Apply();
+			break;
 
 		case kMsgOptionChanged:
 		case kMsgDelayChanged:

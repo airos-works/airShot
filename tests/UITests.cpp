@@ -76,6 +76,35 @@ int main()
             BMenuItem* marked = resolution->Menu()->FindMarked();
             CHECK(marked != nullptr && resolution->Menu()->IndexOf(marked) == 0);
         }
+        // Print Screen starts a full screen capture; giving it to region
+        // capture swaps the two shortcuts.
+        auto* printScreen = dynamic_cast<BMenuField*>(window->FindView("printScreen"));
+        auto* fullKey = dynamic_cast<KeyCaptureControl*>(window->FindView("fullKey"));
+        auto* regionKey = dynamic_cast<KeyCaptureControl*>(window->FindView("regionKey"));
+        CHECK(printScreen != nullptr && fullKey != nullptr && regionKey != nullptr);
+        if (printScreen && fullKey && regionKey) {
+            BMenuItem* marked = printScreen->Menu()->FindMarked();
+            CHECK(marked != nullptr && printScreen->Menu()->IndexOf(marked) == 0);
+            BMessage choose(*printScreen->Menu()->ItemAt(2)->Message());
+            window->MessageReceived(&choose);
+            CHECK(regionKey->Key() == settings.fullHotKey);
+            CHECK(fullKey->Key() == settings.regionHotKey);
+            marked = printScreen->Menu()->FindMarked();
+            CHECK(marked != nullptr && printScreen->Menu()->IndexOf(marked) == 2);
+            // Recording Print Screen for a window capture takes it from region.
+            auto* windowKey = dynamic_cast<KeyCaptureControl*>(window->FindView("windowKey"));
+            windowKey->StartRecording();
+            BMessage press(B_KEY_DOWN);
+            press.AddInt32("key", kKeyPrintScreen);
+            press.AddInt32("modifiers", 0);
+            windowKey->HandleKeyMessage(&press);
+            BMessage changed(*windowKey->Message());
+            changed.AddPointer("source", windowKey);
+            window->MessageReceived(&changed);
+            CHECK(!regionKey->Key().IsSet());
+            marked = printScreen->Menu()->FindMarked();
+            CHECK(marked != nullptr && printScreen->Menu()->IndexOf(marked) == 1);
+        }
         window->Quit();
 
         auto* main = new MainWindow(settings);

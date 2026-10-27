@@ -99,7 +99,9 @@ and undo/redo visibly dim and enable as the document history changes.
 4. Editor: every tool, undo/redo, zoom (Alt+wheel), Save (notification and
    file in the configured folder), Copy (paste into another app).
 5. Settings: record a new shortcut (the old one must not fire while
-   recording), change the save folder, toggle the Deskbar icon.
+   recording), set *Print Screen key* to a region (plain Print Screen opens
+   the region crosshair, Ctrl+Print Screen captures the full screen), change
+   the save folder, toggle the Deskbar icon.
 6. Deskbar icon menu: captures, open, settings, quit.
 7. `airShot picture.png` opens the file in the editor.
 8. On a scaled display (Screen preferences, 150 or 175%): a full-screen

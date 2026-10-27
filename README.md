@@ -40,8 +40,10 @@ Install with `pkgman install <file>`, or copy the file into `/boot/system/packag
 | Region        | `Ctrl+Print Screen`  |
 
 Change them in *Settings…* (click a shortcut, press the new keys; Backspace
-clears it). The shortcuts replace Haiku's built-in Print Screen handling while
-the add-on is installed.
+clears it). To make plain `Print Screen` take a window or a region instead,
+pick it under *Print Screen key*: the capture that had the key swaps shortcuts
+with the one you picked. The shortcuts replace Haiku's built-in Print Screen
+handling while the add-on is installed.
 
 ## Using the overlay
 
