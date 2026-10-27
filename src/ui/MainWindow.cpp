@@ -65,7 +65,9 @@ MainWindow::MainWindow(const Settings& settings)
 
 	BStringView* title = new BStringView("title", "Take a screenshot");
 	BFont bold(be_bold_font);
-	bold.SetSize(bold.Size() * 1.15f);
+	// A whole point size: at fractional sizes StringWidth() comes out narrower
+	// than the drawn text, and the view, sized to fit, clips the last letter.
+	bold.SetSize(roundf(bold.Size() * 1.15f));
 	title->SetFont(&bold);
 
 	BLayoutBuilder::Group<>(this, B_VERTICAL, 0)
